@@ -1,0 +1,367 @@
+# ============================================================
+# Lovelace YAML — HVAC tab MINIMAL (zonder HACS-dependencies)
+# ============================================================
+# Werkt met alleen built-in HA cards. Gebruik dit als 08-Lovelace-HVAC-tab.yaml
+# faalt door ontbrekende HACS components (mushroom, apexcharts, mini-graph).
+# ============================================================
+
+title: HVAC
+path: hvac
+icon: mdi:radiator
+type: sections
+max_columns: 4
+sections:
+
+  # ============================================================
+  # SECTIE 1 — Live status (glance card)
+  # ============================================================
+  - type: grid
+    column_span: 4
+    cards:
+      - type: heading
+        heading: "🔥 Live HVAC status"
+        heading_style: title
+
+      - type: glance
+        title: Branders + temperaturen
+        columns: 5
+        entities:
+          - entity: binary_sensor.cv_brander_actief
+            name: CV brander
+          - entity: sensor.cv_modulatie
+            name: Modulatie
+          - entity: sensor.cv_aanvoer_temp
+            name: CV aanv
+          - entity: sensor.cv_retour_temp
+            name: CV ret
+          - entity: sensor.cv_gas_debiet
+            name: Gas debiet
+          - entity: binary_sensor.pellet_brander_actief
+            name: Pellet brander
+          - entity: sensor.pellet_vermogen
+            name: Pellet kW
+          - entity: sensor.pellet_aanvoer_temp
+            name: Pellet aanv
+          - entity: sensor.pellet_retour_temp
+            name: Pellet ret
+          - entity: sensor.driewegklep_pomp_temp
+            name: 3-wegklep T
+          - entity: sensor.boiler_temp_boven
+            name: Boiler ▲
+          - entity: sensor.boiler_temp_onder
+            name: Boiler ▼
+          - entity: sensor.toon_kamer_temp
+            name: Huiskamer
+          - entity: sensor.toon_setpoint
+            name: Toon setpt
+          - entity: sensor.tado_schuur_temp
+            name: Schuur
+
+  # ============================================================
+  # SECTIE 2 — VANDAAG: verbruik + kosten
+  # ============================================================
+  - type: grid
+    column_span: 4
+    cards:
+      - type: heading
+        heading: "📊 Vandaag"
+
+      - type: horizontal-stack
+        cards:
+          - type: entity
+            entity: sensor.cv_gas_dag
+            name: Gas vandaag
+            icon: mdi:fire
+            unit: m³
+          - type: entity
+            entity: sensor.gas_kosten_dag
+            name: Gas kosten
+            icon: mdi:currency-eur
+          - type: entity
+            entity: sensor.pellet_kg_dag
+            name: Pellet vandaag
+            icon: mdi:pine-tree-fire
+            unit: kg
+          - type: entity
+            entity: sensor.pellet_kosten_dag
+            name: Pellet kosten
+            icon: mdi:currency-eur
+          - type: entity
+            entity: sensor.totaal_kosten_dag
+            name: Totaal
+            icon: mdi:cash-multiple
+          - type: entity
+            entity: sensor.besparing_pellet_dag
+            name: Besparing
+            icon: mdi:piggy-bank
+
+  # ============================================================
+  # SECTIE 3 — DEZE MAAND
+  # ============================================================
+  - type: grid
+    column_span: 4
+    cards:
+      - type: heading
+        heading: "📊 Deze maand"
+
+      - type: horizontal-stack
+        cards:
+          - type: entity
+            entity: sensor.cv_gas_maand
+            name: Gas maand
+            icon: mdi:fire
+          - type: entity
+            entity: sensor.gas_kosten_maand
+            name: Gas kosten
+            icon: mdi:currency-eur
+          - type: entity
+            entity: sensor.pellet_kg_maand
+            name: Pellet maand
+            icon: mdi:pine-tree-fire
+          - type: entity
+            entity: sensor.pellet_kosten_maand
+            name: Pellet kosten
+            icon: mdi:currency-eur
+          - type: entity
+            entity: sensor.totaal_kosten_maand
+            name: Totaal
+            icon: mdi:cash-multiple
+          - type: entity
+            entity: sensor.besparing_pellet_maand
+            name: Besparing
+            icon: mdi:piggy-bank
+
+  # ============================================================
+  # SECTIE 4 — DIT JAAR
+  # ============================================================
+  - type: grid
+    column_span: 4
+    cards:
+      - type: heading
+        heading: "📊 Dit jaar"
+
+      - type: horizontal-stack
+        cards:
+          - type: entity
+            entity: sensor.cv_gas_jaar
+            name: Gas jaar
+            icon: mdi:fire
+          - type: entity
+            entity: sensor.gas_kosten_jaar
+            name: Gas kosten
+            icon: mdi:currency-eur
+          - type: entity
+            entity: sensor.pellet_kg_jaar
+            name: Pellet jaar
+            icon: mdi:pine-tree-fire
+          - type: entity
+            entity: sensor.pellet_kosten_jaar
+            name: Pellet kosten
+            icon: mdi:currency-eur
+          - type: entity
+            entity: sensor.totaal_kosten_jaar
+            name: Totaal
+            icon: mdi:cash-multiple
+          - type: entity
+            entity: sensor.besparing_pellet_jaar
+            name: Besparing
+            icon: mdi:piggy-bank
+
+  # ============================================================
+  # SECTIE 5 — Energie-trend (built-in statistic-graph card)
+  # ============================================================
+  - type: grid
+    column_span: 4
+    cards:
+      - type: heading
+        heading: "📈 Energie-trend laatste 7 dagen"
+
+      - type: statistics-graph
+        title: Gas vs pellet (kWh/dag)
+        chart_type: bar
+        days_to_show: 7
+        period: day
+        stat_types:
+          - sum
+        entities:
+          - sensor.cv_gas_totaal_m3
+          - sensor.pellet_verbruik_totaal_kg
+
+  # ============================================================
+  # SECTIE 6 — Voorraad + onderhoud
+  # ============================================================
+  - type: grid
+    column_span: 2
+    cards:
+      - type: heading
+        heading: "📦 Voorraad & onderhoud"
+
+      - type: entities
+        entities:
+          - entity: sensor.pellet_voorraad_kg
+            name: Voorraad
+            icon: mdi:weight-kilogram
+          - entity: sensor.pellet_voorraad_dagen
+            name: Resterende dagen
+            icon: mdi:calendar
+          - type: divider
+          - entity: input_datetime.pellet_laatste_bestelling_datum
+            name: Laatste bestelling
+            icon: mdi:truck-delivery
+          - entity: input_number.pellet_laatste_bestelling_kg
+            name: Laatste bestel-kg
+            icon: mdi:weight
+          - entity: input_number.pellet_prijs_per_ton
+            name: Pellet prijs / ton
+            icon: mdi:currency-eur
+          - type: divider
+          - entity: input_datetime.cv_volgende_onderhoud
+            name: CV onderhoud
+            icon: mdi:wrench
+          - entity: input_datetime.pellet_volgende_onderhoud
+            name: Pellet onderhoud
+            icon: mdi:wrench
+
+      - type: gauge
+        entity: sensor.pellet_voorraad_kg
+        name: Pellet voorraad
+        min: 0
+        max: 240
+        severity:
+          green: 60
+          yellow: 30
+          red: 15
+
+  # ============================================================
+  # SECTIE 7 — Comfort (history-graph)
+  # ============================================================
+  - type: grid
+    column_span: 2
+    cards:
+      - type: heading
+        heading: "🌡 Comfort (24u)"
+
+      - type: history-graph
+        title: Temperaturen
+        hours_to_show: 24
+        entities:
+          - sensor.cv_aanvoer_temp
+          - sensor.cv_retour_temp
+          - sensor.boiler_temp_boven
+          - sensor.boiler_temp_onder
+          - sensor.toon_kamer_temp
+          - sensor.tado_schuur_temp
+
+      - type: entities
+        title: Brander-uren
+        entities:
+          - counter.cv_brander_uren
+          - counter.pellet_brander_uren
+
+  # ============================================================
+  # SECTIE 8 — Energieprijzen
+  # ============================================================
+  - type: grid
+    column_span: 2
+    cards:
+      - type: heading
+        heading: "💰 Tarieven"
+
+      - type: entities
+        entities:
+          - entity: sensor.frank_energie_gas_huidige_prijs
+            name: Gas (€/m³)
+            icon: mdi:gas-cylinder
+          - entity: sensor.frank_energie_stroom_huidige_prijs
+            name: Stroom (€/kWh)
+            icon: mdi:flash
+          - entity: input_number.pellet_prijs_per_ton
+            name: Pellet (€/ton)
+            icon: mdi:pine-tree-fire
+
+      - type: history-graph
+        title: Gas-prijs vandaag
+        hours_to_show: 24
+        entities:
+          - sensor.frank_energie_gas_huidige_prijs
+
+  # ============================================================
+  # SECTIE 9 — Pellet-circuit details
+  # ============================================================
+  - type: grid
+    column_span: 2
+    cards:
+      - type: heading
+        heading: "🌲 Pellet-circuit"
+
+      - type: entities
+        entities:
+          - binary_sensor.pellet_brander_actief
+          - sensor.pellet_vermogen
+          - sensor.pellet_modulatie
+          - sensor.pellet_aanvoer_temp
+          - sensor.pellet_retour_temp
+          - type: divider
+          - sensor.driewegklep_pomp_temp
+          - binary_sensor.driewegklep_naar_systeem
+          - type: divider
+          - sensor.vlw_schuur_g1_temp
+          - sensor.vlw_schuur_g2_temp
+          - sensor.vlw_schuur_g3_temp
+          - sensor.tado_schuur_temp
+
+  # ============================================================
+  # SECTIE 10 — Insights (markdown)
+  # ============================================================
+  - type: grid
+    column_span: 4
+    cards:
+      - type: heading
+        heading: "💡 Insights"
+
+      - type: markdown
+        content: |
+          {% set pellet_kg = states('sensor.pellet_voorraad_kg')|float(0) %}
+          {% set pellet_dagen = states('sensor.pellet_voorraad_dagen')|float(0) %}
+          {% set gas_prijs = states('sensor.frank_energie_gas_huidige_prijs')|float(0) %}
+          {% set pellet_actief = is_state('binary_sensor.pellet_brander_actief','on') %}
+          {% set boiler_top = states('sensor.boiler_temp_boven')|float(0) %}
+          {% set boiler_bot = states('sensor.boiler_temp_onder')|float(0) %}
+
+          ### Live status
+          {% if pellet_actief %}
+          ● **Pellet draait** — {{ states('sensor.pellet_vermogen') }} kW @ {{ states('sensor.pellet_modulatie') }}% modulatie. 3-wegklep T-pomp {{ states('sensor.driewegklep_pomp_temp') }}°C → klep {% if is_state('binary_sensor.driewegklep_naar_systeem','on') %}**actief richting BG**{% else %}**bypass-recirculatie**{% endif %}.
+          {% else %}
+          ○ Pellet uit.
+          {% endif %}
+
+          **Boiler-stratificatie**: ▲ {{ boiler_top }}°C boven · ▼ {{ boiler_bot }}°C onder · ΔT = {{ (boiler_top - boiler_bot)|round(1) }}°C
+          {% if boiler_top > 55 %}→ buffer goed gevuld, tapwater vraagt nu nauwelijks gas.
+          {% elif boiler_top > 40 %}→ buffer halfvol, lichte na-verwarming bij grote tap-vraag.
+          {% else %}→ buffer leeg, ketel valt terug op standaard combi.
+          {% endif %}
+
+          ### Voorraad & advies
+          {% if pellet_kg < 15 %}⚠️ **Pellet kritiek laag** ({{ pellet_kg }} kg, ~{{ pellet_dagen|round(0) }} dagen). Bestel **vandaag**.
+          {% elif pellet_kg < 30 %}⚠️ **Pellet bijna op** ({{ pellet_kg }} kg, ~{{ pellet_dagen|round(0) }} dagen). Bestel binnen 5 dagen.
+          {% else %}✓ Pellet voldoende ({{ pellet_kg }} kg, ~{{ pellet_dagen|round(0) }} dagen).
+          {% endif %}
+
+          {% if gas_prijs > 1.6 %}📈 **Gas-tarief hoog** (€{{ gas_prijs }}/m³). Pellet-prioriteit is nu extra kostenefficiënt.
+          {% elif gas_prijs < 1.2 %}📉 Gas-tarief laag (€{{ gas_prijs }}/m³). Pellet-besparing beperkter dan normaal.
+          {% endif %}
+
+
+# ============================================================
+# DEPLOYMENT-INSTRUCTIES (zelfde als 08, met built-in cards)
+# ============================================================
+#
+# 1. Open Future dashboard → ⋮ Edit → + Add view → Raw configuration
+# 2. Plak deze YAML (sections t/m insights)
+# 3. Save. Tabblad heet "HVAC".
+#
+# GEEN HACS-COMPONENTEN VEREIST — alle cards zijn built-in HA.
+# Iconen werken via MDI (Material Design Icons), beschikbaar in HA core.
+#
+# Optioneel upgrade pad: installeer mushroom-cards / apexcharts-card / mini-graph-card
+# en gebruik dan 08-Lovelace-HVAC-tab.yaml voor een rijkere visuele ervaring.

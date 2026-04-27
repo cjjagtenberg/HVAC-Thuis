@@ -1,0 +1,433 @@
+# ============================================================
+# HVAC supporting config — plak in je configuration.yaml
+# ============================================================
+# Onderdelen:
+#   1. utility_meter      — periode-counters voor gas + pellet
+#   2. input_number       — handmatige helpers (pellet-prijs, voorraad)
+#   3. input_datetime     — datums (laatste bestelling, onderhoud)
+#   4. counter            — brander-uren CV + pellet
+#   5. template:          — afgeleide sensoren (kosten, besparing, ΔT)
+#   6. sensor: statistics — 24h-gemiddelden voor comfort
+#   7. automation:        — counter-triggers + voorraad-waarschuwingen
+# ============================================================
+
+
+# ============================================================
+# 1. UTILITY METERS
+# ============================================================
+utility_meter:
+  cv_gas_dag:
+    source: sensor.cv_gas_totaal_m3   # totaal-meter uit Toon-integratie
+    cycle: daily
+    name: "Gas verbruik dag"
+  cv_gas_maand:
+    source: sensor.cv_gas_totaal_m3
+    cycle: monthly
+    name: "Gas verbruik maand"
+  cv_gas_jaar:
+    source: sensor.cv_gas_totaal_m3
+    cycle: yearly
+    name: "Gas verbruik jaar"
+
+  pellet_kg_dag:
+    source: sensor.pellet_verbruik_totaal_kg   # uit Naturela-integratie
+    cycle: daily
+    name: "Pellet verbruik dag"
+  pellet_kg_maand:
+    source: sensor.pellet_verbruik_totaal_kg
+    cycle: monthly
+    name: "Pellet verbruik maand"
+  pellet_kg_jaar:
+    source: sensor.pellet_verbruik_totaal_kg
+    cycle: yearly
+    name: "Pellet verbruik jaar"
+
+
+# ============================================================
+# 2. INPUT_NUMBER HELPERS
+# ============================================================
+input_number:
+  pellet_prijs_per_ton:
+    name: "Pellet prijs per ton"
+    min: 200
+    max: 700
+    step: 5
+    initial: 425
+    unit_of_measurement: "€/ton"
+    icon: mdi:currency-eur
+
+  pellet_laatste_bestelling_kg:
+    name: "Pellet laatste bestelling"
+    min: 0
+    max: 1000
+    step: 15
+    initial: 240
+    unit_of_measurement: "kg"
+    icon: mdi:weight-kilogram
+
+  pellet_dag_verbruik_gem:
+    name: "Pellet gem. dagverbruik"
+    min: 0
+    max: 30
+    step: 0.1
+    initial: 8.5
+    unit_of_measurement: "kg/dag"
+    icon: mdi:chart-line
+
+
+# ============================================================
+# 3. INPUT_DATETIME HELPERS
+# ============================================================
+input_datetime:
+  pellet_laatste_bestelling_datum:
+    name: "Pellet laatste bestelling"
+    has_date: true
+    has_time: false
+    icon: mdi:truck-delivery
+
+  cv_volgende_onderhoud:
+    name: "CV ketel volgende onderhoud"
+    has_date: true
+    has_time: false
+    icon: mdi:wrench
+
+  pellet_volgende_onderhoud:
+    name: "Pellet volgende onderhoud"
+    has_date: true
+    has_time: false
+    icon: mdi:wrench
+
+
+# ============================================================
+# 4. COUNTERS — brander-uren
+# ============================================================
+counter:
+  cv_brander_uren:
+    name: "CV ketel brander uren"
+    initial: 0
+    step: 1
+    icon: mdi:timer
+
+  pellet_brander_uren:
+    name: "Pellet brander uren"
+    initial: 0
+    step: 1
+    icon: mdi:timer
+
+
+# ============================================================
+# 5. TEMPLATE SENSOREN
+# ============================================================
+template:
+  - sensor:
+      # ---- Mengkraan output (afgeleid uit boiler-temp) ----
+      - name: "Mengkraan output (berekend)"
+        unique_id: mengkraan_output_calculated
+        unit_of_measurement: "°C"
+        icon: mdi:thermometer
+        state: >-
+          {{ [states('sensor.boiler_temp_boven')|float(0), 65]|min }}
+
+      # ---- Stratificatie ----
+      - name: "Boiler stratificatie ΔT"
+        unique_id: boiler_stratificatie_dt
+        unit_of_measurement: "°C"
+        icon: mdi:format-vertical-align-center
+        state: >-
+          {{ (states('sensor.boiler_temp_boven')|float(0)
+              - states('sensor.boiler_temp_onder')|float(0))|round(1) }}
+
+      - name: "CV aanvoer-retour ΔT"
+        unique_id: cv_aanvoer_retour_dt
+        unit_of_measurement: "°C"
+        icon: mdi:delta
+        state: >-
+          {{ (states('sensor.cv_aanvoer_temp')|float(0)
+              - states('sensor.cv_retour_temp')|float(0))|round(1) }}
+
+      # ---- 3-wegklep status (afgeleid) ----
+      - name: "3-wegklep naar systeem"
+        unique_id: driewegklep_naar_systeem
+        device_class: opening
+        state: >-
+          {{ states('sensor.driewegklep_pomp_temp')|float(0) >= 35 }}
+
+      # ---- Pellet voorraad ----
+      - name: "Pellet voorraad kg"
+        unique_id: pellet_voorraad_kg
+        unit_of_measurement: "kg"
+        icon: mdi:weight-kilogram
+        state: >-
+          {% set start = states('input_number.pellet_laatste_bestelling_kg')|float(0) %}
+          {% set verbruik = states('sensor.pellet_kg_sinds_bestelling')|float(0) %}
+          {{ (start - verbruik)|round(1) }}
+
+      - name: "Pellet voorraad dagen"
+        unique_id: pellet_voorraad_dagen
+        unit_of_measurement: "dagen"
+        icon: mdi:calendar
+        state: >-
+          {% set kg = states('sensor.pellet_voorraad_kg')|float(0) %}
+          {% set per_dag = states('input_number.pellet_dag_verbruik_gem')|float(0.1) %}
+          {{ (kg / per_dag)|round(0) if per_dag > 0 else 0 }}
+
+      # ---- Kosten dag ----
+      - name: "Gas kosten vandaag"
+        unique_id: gas_kosten_dag
+        unit_of_measurement: "€"
+        icon: mdi:currency-eur
+        state: >-
+          {{ (states('sensor.cv_gas_dag')|float(0)
+              * states('sensor.frank_energie_gas_huidige_prijs')|float(0))|round(2) }}
+
+      - name: "Pellet kosten vandaag"
+        unique_id: pellet_kosten_dag
+        unit_of_measurement: "€"
+        icon: mdi:currency-eur
+        state: >-
+          {{ (states('sensor.pellet_kg_dag')|float(0)
+              * states('input_number.pellet_prijs_per_ton')|float(0) / 1000)|round(2) }}
+
+      - name: "Totaal kosten vandaag"
+        unique_id: totaal_kosten_dag
+        unit_of_measurement: "€"
+        icon: mdi:cash-multiple
+        state: >-
+          {{ (states('sensor.gas_kosten_dag')|float(0)
+              + states('sensor.pellet_kosten_dag')|float(0))|round(2) }}
+
+      - name: "Besparing pellet vandaag"
+        unique_id: besparing_pellet_dag
+        unit_of_measurement: "€"
+        icon: mdi:piggy-bank
+        state: >-
+          {# pellet kWh × gasprijs/kWh-equivalent − werkelijke pellet-kosten #}
+          {% set pellet_kwh = states('sensor.pellet_kg_dag')|float(0) * 4.8 %}
+          {% set gas_alt_m3 = pellet_kwh / 9.77 %}
+          {% set gas_alt = gas_alt_m3 * states('sensor.frank_energie_gas_huidige_prijs')|float(0) %}
+          {{ (gas_alt - states('sensor.pellet_kosten_dag')|float(0))|round(2) }}
+
+      # ---- Kosten maand (zelfde formule, maand-meter) ----
+      - name: "Gas kosten maand"
+        unique_id: gas_kosten_maand
+        unit_of_measurement: "€"
+        state: >-
+          {{ (states('sensor.cv_gas_maand')|float(0)
+              * states('sensor.frank_energie_gas_huidige_prijs')|float(0))|round(2) }}
+
+      - name: "Pellet kosten maand"
+        unique_id: pellet_kosten_maand
+        unit_of_measurement: "€"
+        state: >-
+          {{ (states('sensor.pellet_kg_maand')|float(0)
+              * states('input_number.pellet_prijs_per_ton')|float(0) / 1000)|round(2) }}
+
+      - name: "Totaal kosten maand"
+        unique_id: totaal_kosten_maand
+        unit_of_measurement: "€"
+        state: >-
+          {{ (states('sensor.gas_kosten_maand')|float(0)
+              + states('sensor.pellet_kosten_maand')|float(0))|round(2) }}
+
+      - name: "Besparing pellet maand"
+        unique_id: besparing_pellet_maand
+        unit_of_measurement: "€"
+        state: >-
+          {% set pellet_kwh = states('sensor.pellet_kg_maand')|float(0) * 4.8 %}
+          {% set gas_alt_m3 = pellet_kwh / 9.77 %}
+          {% set gas_alt = gas_alt_m3 * states('sensor.frank_energie_gas_huidige_prijs')|float(0) %}
+          {{ (gas_alt - states('sensor.pellet_kosten_maand')|float(0))|round(2) }}
+
+      # ---- Kosten jaar ----
+      - name: "Gas kosten jaar"
+        unique_id: gas_kosten_jaar
+        unit_of_measurement: "€"
+        state: >-
+          {{ (states('sensor.cv_gas_jaar')|float(0)
+              * states('sensor.frank_energie_gas_huidige_prijs')|float(0))|round(2) }}
+
+      - name: "Pellet kosten jaar"
+        unique_id: pellet_kosten_jaar
+        unit_of_measurement: "€"
+        state: >-
+          {{ (states('sensor.pellet_kg_jaar')|float(0)
+              * states('input_number.pellet_prijs_per_ton')|float(0) / 1000)|round(2) }}
+
+      - name: "Totaal kosten jaar"
+        unique_id: totaal_kosten_jaar
+        unit_of_measurement: "€"
+        state: >-
+          {{ (states('sensor.gas_kosten_jaar')|float(0)
+              + states('sensor.pellet_kosten_jaar')|float(0))|round(2) }}
+
+      - name: "Besparing pellet jaar"
+        unique_id: besparing_pellet_jaar
+        unit_of_measurement: "€"
+        state: >-
+          {% set pellet_kwh = states('sensor.pellet_kg_jaar')|float(0) * 4.8 %}
+          {% set gas_alt_m3 = pellet_kwh / 9.77 %}
+          {% set gas_alt = gas_alt_m3 * states('sensor.frank_energie_gas_huidige_prijs')|float(0) %}
+          {{ (gas_alt - states('sensor.pellet_kosten_jaar')|float(0))|round(2) }}
+
+
+# ============================================================
+# 6. STATISTICS SENSOREN — 24h-gemiddelden
+# ============================================================
+sensor:
+  - platform: statistics
+    name: "Toon kamer temp 24h gem"
+    unique_id: toon_kamer_temp_24h_avg
+    entity_id: sensor.toon_kamer_temp
+    state_characteristic: mean
+    max_age:
+      hours: 24
+
+  - platform: statistics
+    name: "Tado schuur temp 24h gem"
+    unique_id: tado_schuur_temp_24h_avg
+    entity_id: sensor.tado_schuur_temp
+    state_characteristic: mean
+    max_age:
+      hours: 24
+
+
+# ============================================================
+# 7. AUTOMATIONS
+# ============================================================
+automation:
+  # ---- Brander-uur tellers ----
+  - alias: "HVAC: tel CV brander uur"
+    id: hvac_count_cv_brander_hour
+    trigger:
+      - platform: time_pattern
+        hours: "/1"
+    condition:
+      - condition: state
+        entity_id: binary_sensor.cv_brander_actief
+        state: "on"
+    action:
+      - service: counter.increment
+        target:
+          entity_id: counter.cv_brander_uren
+
+  - alias: "HVAC: tel pellet brander uur"
+    id: hvac_count_pellet_brander_hour
+    trigger:
+      - platform: time_pattern
+        hours: "/1"
+    condition:
+      - condition: state
+        entity_id: binary_sensor.pellet_brander_actief
+        state: "on"
+    action:
+      - service: counter.increment
+        target:
+          entity_id: counter.pellet_brander_uren
+
+  # ---- Pellet voorraad waarschuwing ----
+  - alias: "HVAC: pellet voorraad waarschuwing"
+    id: hvac_pellet_voorraad_warn
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.pellet_voorraad_kg
+        below: 30
+    action:
+      - service: notify.mobile_app   # vervang door jouw notify-target
+        data:
+          title: "Pellet bijna op"
+          message: >-
+            Voorraad: {{ states('sensor.pellet_voorraad_kg') }} kg
+            (~{{ states('sensor.pellet_voorraad_dagen') }} dagen). Bestel binnen 5 dagen.
+
+  - alias: "HVAC: pellet voorraad kritiek"
+    id: hvac_pellet_voorraad_critical
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.pellet_voorraad_kg
+        below: 15
+    action:
+      - service: persistent_notification.create
+        data:
+          title: "⚠ PELLET KRITIEK"
+          message: >-
+            Voorraad: {{ states('sensor.pellet_voorraad_kg') }} kg.
+            BESTEL VANDAAG om gas-fallback te voorkomen.
+      - service: notify.mobile_app
+        data:
+          title: "⚠ Pellet kritiek"
+          message: "{{ states('sensor.pellet_voorraad_kg') }} kg - bestel vandaag!"
+
+  # ---- Buffer leeg waarschuwing ----
+  - alias: "HVAC: boiler buffer leeg"
+    id: hvac_boiler_buffer_empty
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.boiler_temp_boven
+        below: 40
+        for:
+          minutes: 5
+    condition:
+      - condition: state
+        entity_id: binary_sensor.cv_tapwater_actief
+        state: "on"
+    action:
+      - service: persistent_notification.create
+        data:
+          title: "Boiler buffer leeg"
+          message: >-
+            Boven-temp {{ states('sensor.boiler_temp_boven') }}°C bij actief
+            tapwater-gebruik. CV ketel valt nu terug op standaard combi-functie.
+
+  # ---- Gas-tarief piek ----
+  - alias: "HVAC: gas-tarief piek"
+    id: hvac_gas_price_high
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.frank_energie_gas_huidige_prijs
+        above: 1.80
+    action:
+      - service: persistent_notification.create
+        data:
+          title: "📈 Hoog gas-tarief"
+          message: >-
+            Gas €{{ states('sensor.frank_energie_gas_huidige_prijs') }}/m³.
+            Pellet-prioriteit aanbevolen.
+
+
+# ============================================================
+# DEPLOYMENT-VOLGORDE
+# ============================================================
+# 1. Verifieer eerst dat onderstaande BRON-entiteiten bestaan in jouw HA
+#    (via Developer Tools → States):
+#    - sensor.cv_gas_totaal_m3            (Toon)
+#    - sensor.cv_aanvoer_temp / cv_retour_temp / cv_modulatie  (Toon)
+#    - binary_sensor.cv_brander_actief    (Toon)
+#    - sensor.toon_kamer_temp / toon_setpoint
+#    - sensor.pellet_verbruik_totaal_kg / pellet_kg_sinds_bestelling
+#    - sensor.pellet_aanvoer_temp / pellet_retour_temp / pellet_vermogen / pellet_modulatie
+#    - binary_sensor.pellet_brander_actief
+#    - sensor.driewegklep_pomp_temp
+#    - sensor.tado_schuur_temp
+#    - sensor.frank_energie_gas_huidige_prijs / stroom_huidige_prijs
+#
+#    + de NIEUWE DS18B20-sensoren (zie roadmap):
+#    - sensor.boiler_temp_boven / boiler_temp_onder
+#    - sensor.vlw_schuur_g1_temp / g2 / g3
+#    - sensor.tap_warm_temp
+#
+# 2. Indien entity-IDs anders zijn: search&replace in dit bestand.
+#
+# 3. Plak deze YAML-blokken in configuration.yaml (NB: bij meerdere
+#    entries onder dezelfde top-level key, voeg netjes samen).
+#
+# 4. HA → Developer Tools → YAML configuration → "Check Configuration".
+#    Geen errors? Restart HA via "Restart Home Assistant".
+#
+# 5. Voeg helpers toe via UI: Settings → Devices & services → Helpers.
+#    Onder hen: pellet_prijs_per_ton, pellet_laatste_bestelling_kg/datum,
+#    cv/pellet_volgende_onderhoud, pellet_dag_verbruik_gem.
+#
+# 6. Plak het Lovelace tabblad uit 08-Lovelace-HVAC-tab.yaml in de
+#    Future dashboard.
+#
+# 7. Stel notify.mobile_app correct in (of vervang door jouw notify-service).

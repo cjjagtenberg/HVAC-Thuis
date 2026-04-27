@@ -1,0 +1,774 @@
+# ============================================================================
+#  HVAC Thuis — Lovelace dashboard concept
+#  Stijl: dark glassmorphism (matched met 04-Dashboard-concept.html)
+#  Vereist: HACS + custom cards
+#    - custom:button-card           https://github.com/custom-cards/button-card
+#    - custom:mushroom              https://github.com/piitaya/lovelace-mushroom
+#    - custom:apexcharts-card       https://github.com/RomRider/apexcharts-card
+#    - custom:bar-card              https://github.com/custom-cards/bar-card
+#    - custom:layout-card           https://github.com/thomasloven/lovelace-layout-card
+#    - custom:auto-entities         (optioneel, voor zone tegels)
+#    - card-mod                     https://github.com/thomasloven/lovelace-card-mod
+#    - custom:vertical-stack-in-card (optioneel grouping)
+#  Voorbeeldconfig — past entities aan op de eindstand uit 03-Entities-en-sensoren.md
+# ============================================================================
+
+views:
+  - title: HVAC
+    path: hvac
+    type: sections
+    max_columns: 4
+    background:
+      image: none
+    cards: []
+    sections:
+
+      # =====================================================================
+      # SECTIE 1 — HERO: systeem-overzicht (schema + KPI strip)
+      # =====================================================================
+      - type: grid
+        column_span: 4
+        cards:
+          # Header strip
+          - type: custom:mushroom-template-card
+            primary: HVAC Thuis
+            secondary: "{{ states('sensor.actieve_warmtebron') }} · {{ states('sensor.pellet_warmtevermogen') }} kW"
+            icon: mdi:fire-circle
+            icon_color: deep-orange
+            tap_action:
+              action: none
+            card_mod:
+              style: |
+                ha-card {
+                  background: linear-gradient(135deg,
+                    rgba(255,140,66,.10) 0%,
+                    rgba(94,146,243,.06) 100%);
+                  border:1px solid rgba(255,255,255,.08);
+                  border-radius: 22px;
+                  backdrop-filter: blur(20px);
+                }
+
+          # Schematische SVG van de installatie als picture-elements
+          # (lokale upload van schema.svg in /config/www/hvac/schema.svg)
+          - type: picture-elements
+            image: /local/hvac/schema.svg
+            elements:
+              # Boiler T1
+              - type: state-label
+                entity: sensor.zolder_boiler_temp_boven
+                style:
+                  top: 18%
+                  left: 15%
+                  color: "#ff6b35"
+                  font-weight: 700
+                  font-size: 16px
+              - type: state-label
+                entity: sensor.zolder_boiler_temp_onder
+                style:
+                  top: 32%
+                  left: 15%
+                  color: "#4fc3f7"
+                  font-weight: 700
+                  font-size: 16px
+              # Pellet aanvoer
+              - type: state-label
+                entity: sensor.pellet_temp_aanvoer
+                style:
+                  top: 65%
+                  left: 28%
+                  color: "#ff8c42"
+                  font-weight: 700
+                  font-size: 18px
+              # Toon
+              - type: state-label
+                entity: sensor.toon_huidige_temperatuur
+                style:
+                  top: 65%
+                  left: 9%
+                  color: "#ffa726"
+                  font-weight: 700
+                  font-size: 16px
+              # Klep status (icon)
+              - type: state-icon
+                entity: binary_sensor.pellet_3weg_klep_open
+                icon: mdi:valve
+                style:
+                  top: 72%
+                  left: 40%
+                  color: "#ff8c42"
+                tap_action:
+                  action: more-info
+            card_mod:
+              style: |
+                ha-card {
+                  background: rgba(255,255,255,.04);
+                  border: 1px solid rgba(255,255,255,.08);
+                  border-radius: 22px;
+                  backdrop-filter: blur(20px);
+                  overflow:hidden;
+                }
+
+          # KPI strip (5 kolommen)
+          - type: horizontal-stack
+            cards:
+              - type: custom:button-card
+                entity: sensor.pellet_temp_aanvoer
+                name: Pellet aanvoer
+                show_state: true
+                show_icon: false
+                styles:
+                  card:
+                    - background: rgba(255,140,66,.08)
+                    - border: 1px solid rgba(255,140,66,.25)
+                    - border-radius: 14px
+                    - padding: 14px
+                  name:
+                    - color: '#8d96b0'
+                    - font-size: 10px
+                    - letter-spacing: 1.5px
+                    - text-transform: uppercase
+                    - font-weight: 600
+                  state:
+                    - color: '#ffa726'
+                    - font-size: 24px
+                    - font-weight: 700
+                    - letter-spacing: '-0.02em'
+
+              - type: custom:button-card
+                name: Boiler T1 / T2
+                show_icon: false
+                show_state: false
+                custom_fields:
+                  val: |
+                    [[[ return `${states['sensor.zolder_boiler_temp_boven'].state} / ${states['sensor.zolder_boiler_temp_onder'].state}` ]]]
+                styles:
+                  card:
+                    - background: rgba(79,195,247,.06)
+                    - border: 1px solid rgba(79,195,247,.22)
+                    - border-radius: 14px
+                    - padding: 14px
+                  name:
+                    - color: '#8d96b0'
+                    - font-size: 10px
+                    - letter-spacing: 1.5px
+                    - text-transform: uppercase
+                    - font-weight: 600
+                  custom_fields:
+                    val:
+                      - color: '#4fc3f7'
+                      - font-size: 24px
+                      - font-weight: 700
+                      - margin-top: 6px
+
+              - type: custom:button-card
+                entity: binary_sensor.toon_brander_actief
+                name: CV ketel
+                show_icon: false
+                state:
+                  - value: 'on'
+                    label: BRANDT
+                    styles:
+                      label:
+                        - color: '#ff6b35'
+                  - value: 'off'
+                    label: IDLE
+                    styles:
+                      label:
+                        - color: '#5e92f3'
+                styles:
+                  card:
+                    - background: rgba(94,146,243,.06)
+                    - border: 1px solid rgba(94,146,243,.22)
+                    - border-radius: 14px
+                    - padding: 14px
+                  name:
+                    - color: '#8d96b0'
+                    - font-size: 10px
+                    - letter-spacing: 1.5px
+                    - text-transform: uppercase
+                    - font-weight: 600
+                  label:
+                    - font-size: 22px
+                    - font-weight: 700
+
+              - type: custom:button-card
+                entity: switch.vloerverwarming_badkamer
+                name: Vloerverw. badkamer
+                show_icon: false
+                tap_action:
+                  action: toggle
+                hold_action:
+                  action: more-info
+                state:
+                  - value: 'on'
+                    label: AAN · tap=uit
+                    styles:
+                      label:
+                        - color: '#66bb6a'
+                      card:
+                        - box-shadow: 0 0 0 1px rgba(102,187,106,.4), 0 0 24px -6px rgba(102,187,106,.5)
+                  - value: 'off'
+                    label: UIT · tap=aan
+                    styles:
+                      label:
+                        - color: '#5a637a'
+                styles:
+                  card:
+                    - background: rgba(102,187,106,.06)
+                    - border: 1px solid rgba(102,187,106,.22)
+                    - border-radius: 14px
+                    - padding: 14px
+                    - cursor: pointer
+                    - transition: all 0.2s ease
+                  name:
+                    - color: '#8d96b0'
+                    - font-size: 10px
+                    - letter-spacing: 1.5px
+                    - text-transform: uppercase
+                    - font-weight: 600
+                  label:
+                    - font-size: 16px
+                    - font-weight: 700
+
+              - type: custom:button-card
+                entity: sensor.toon_huidige_temperatuur
+                name: Woonkamer
+                show_state: true
+                show_icon: false
+                styles:
+                  card:
+                    - background: rgba(255,167,38,.06)
+                    - border: 1px solid rgba(255,167,38,.22)
+                    - border-radius: 14px
+                    - padding: 14px
+                  name:
+                    - color: '#8d96b0'
+                    - font-size: 10px
+                    - letter-spacing: 1.5px
+                    - text-transform: uppercase
+                    - font-weight: 600
+                  state:
+                    - color: '#ffa726'
+                    - font-size: 24px
+                    - font-weight: 700
+
+      # =====================================================================
+      # SECTIE 2 — Detail tegels (CV / Boiler / Pellet / Vloerverwarming)
+      # =====================================================================
+
+      # ── CV combiketel ────────────────────────────────────────────────────
+      - type: grid
+        column_span: 1
+        cards:
+          - type: custom:mushroom-title-card
+            title: CV combiketel
+            subtitle: Zolder · gas
+          - type: vertical-stack
+            cards:
+              - type: gauge
+                entity: sensor.cv_aanvoer_temp
+                name: Aanvoer
+                min: 20
+                max: 80
+                severity:
+                  green: 35
+                  yellow: 60
+                  red: 75
+              - type: glance
+                entities:
+                  - entity: sensor.cv_aanvoer_temp
+                    name: Aanvoer
+                  - entity: sensor.cv_retour_temp
+                    name: Retour
+                  - entity: sensor.gas_verbruik_dag
+                    name: Gas dag
+                  - entity: binary_sensor.toon_brander_actief
+                    name: Vlam
+
+      # ── Restwarmte boiler ────────────────────────────────────────────────
+      - type: grid
+        column_span: 1
+        cards:
+          - type: custom:mushroom-title-card
+            title: Restwarmte boiler
+            subtitle: Zolder · 2 sensors
+          - type: custom:bar-card
+            title: ""
+            entities:
+              - entity: sensor.zolder_boiler_temp_boven
+                name: T1 boven
+                color: "#ff6b35"
+                min: 10
+                max: 75
+              - entity: sensor.zolder_boiler_temp_onder
+                name: T2 onder
+                color: "#4fc3f7"
+                min: 10
+                max: 75
+            positions:
+              icon: 'off'
+              name: outside
+              value: inside
+            severity:
+              - color: "#ff6b35"
+                from: 50
+                to: 100
+              - color: "#ffa726"
+                from: 35
+                to: 50
+              - color: "#4fc3f7"
+                from: 0
+                to: 35
+          - type: entities
+            entities:
+              - entity: sensor.boiler_delta_t
+                name: Delta T (laad-indicator)
+              - entity: sensor.boiler_laadstatus
+                name: Status
+              - type: attribute
+                entity: sensor.actieve_warmtebron
+                attribute: ""
+                name: Actieve bron
+
+      # ── Pellet CV ────────────────────────────────────────────────────────
+      - type: grid
+        column_span: 1
+        cards:
+          - type: custom:mushroom-title-card
+            title: Pellet CV (Naturela)
+            subtitle: BG · houtpellets
+          - type: custom:button-card
+            entity: binary_sensor.pellet_pomp_actief
+            name: Status
+            icon: mdi:fire
+            state:
+              - value: 'on'
+                styles:
+                  icon:
+                    - color: '#ff8c42'
+                    - filter: drop-shadow(0 0 8px #ff8c42)
+                  label:
+                    - color: '#ff8c42'
+            styles:
+              card:
+                - background: rgba(255,140,66,.06)
+                - border: 1px solid rgba(255,140,66,.25)
+                - border-radius: 16px
+                - padding: 14px
+          - type: glance
+            entities:
+              - entity: sensor.pellet_temp_aanvoer
+                name: Aanvoer
+              - entity: sensor.pellet_temp_retour
+                name: Retour
+              - entity: sensor.pellet_warmtevermogen
+                name: Vermogen
+              - entity: sensor.pellet_voorraad_kg
+                name: Voorraad
+          - type: history-graph
+            entities:
+              - entity: sensor.pellet_temp_aanvoer
+              - entity: sensor.pellet_temp_retour
+            hours_to_show: 12
+
+      # ── Vloerverwarming (badkamer + schuur) ──────────────────────────────
+      - type: grid
+        column_span: 1
+        cards:
+          - type: custom:mushroom-title-card
+            title: Vloerverwarming
+            subtitle: 2 HA-bestuurbare zones
+
+          # Zone 1 — Badkamer
+          - type: custom:mushroom-template-card
+            primary: Badkamer
+            secondary: >
+              {{ states('sensor.badkamer_temperatuur') }}° ·
+              {{ 'aan' if is_state('switch.vloerverwarming_badkamer','on') else 'uit' }}
+            icon: mdi:shower-head
+            icon_color: >
+              {{ 'green' if is_state('switch.vloerverwarming_badkamer','on') else 'grey' }}
+            tap_action:
+              action: toggle
+              entity: switch.vloerverwarming_badkamer
+            hold_action:
+              action: more-info
+              entity: switch.vloerverwarming_badkamer
+          - type: glance
+            entities:
+              - entity: sensor.vloerverwarming_badkamer_aanvoer
+                name: Aanvoer
+              - entity: input_boolean.hvac_boost_badkamer
+                name: Boost 30m
+              - entity: sensor.vloerverwarming_badkamer_runtime_dag
+                name: Runtime
+
+          # Zone 2 — Schuur (passieve restwarmte-afnemer, dependency-guarded)
+          - type: custom:mushroom-template-card
+            primary: Schuur (restwarmte)
+            secondary: >
+              {% set warmte = is_state('binary_sensor.schuur_warmte_beschikbaar','on') %}
+              {% set pomp = is_state('switch.vloerverwarming_schuur','on') %}
+              {{ states('sensor.schuur_temperatuur') }}° ·
+              {% if pomp and warmte %} actief
+              {% elif warmte and not pomp %} beschikbaar (uit)
+              {% elif pomp and not warmte %} pomp aan zonder warmte
+              {% else %} geen warmte
+              {% endif %}
+            icon: mdi:warehouse
+            icon_color: >
+              {% set warmte = is_state('binary_sensor.schuur_warmte_beschikbaar','on') %}
+              {% set pomp = is_state('switch.vloerverwarming_schuur','on') %}
+              {% if pomp and warmte %} green
+              {% elif warmte %} amber
+              {% else %} grey
+              {% endif %}
+            tap_action:
+              action: toggle
+              entity: switch.vloerverwarming_schuur
+            hold_action:
+              action: more-info
+              entity: switch.vloerverwarming_schuur
+
+          # Dependency status (read-only)
+          - type: glance
+            title: ""
+            entities:
+              - entity: sensor.pellet_temp_aanvoer
+                name: Pellet
+              - entity: binary_sensor.pellet_3weg_klep_open
+                name: 3-weg klep
+              - entity: binary_sensor.schuur_warmte_beschikbaar
+                name: Beschikbaar
+              - entity: sensor.vloerverwarming_schuur_runtime_dag
+                name: Runtime
+          - type: markdown
+            content: >
+              **Schuur** is een passieve restwarmte-afnemer.
+              Pomp gaat automatisch uit als pellet niet draait of klep dicht.
+              Tado is monitor-only.
+            card_mod:
+              style: |
+                ha-card { font-size: 11px; color: var(--secondary-text-color); }
+
+      # =====================================================================
+      # SECTIE 3 — Zones, energie & strategie
+      # =====================================================================
+
+      # ── Zones ────────────────────────────────────────────────────────────
+      - type: grid
+        column_span: 2
+        cards:
+          - type: custom:mushroom-title-card
+            title: Zones &amp; ruimtes
+          - type: entities
+            entities:
+              - entity: climate.toon_woonkamer
+                name: Woonkamer (Toon)
+                secondary_info: last-changed
+              - entity: sensor.badkamer_temperatuur
+                name: Badkamer
+              - entity: sensor.slaapkamer_temperatuur
+                name: Slaapkamer
+              - entity: sensor.werkkamer_temperatuur
+                name: Werkkamer
+              - entity: sensor.zolder_temperatuur
+                name: Zolder
+              - entity: sensor.schuur_temperatuur
+                name: Schuur (Tado)
+                secondary_info: last-changed
+              - entity: sensor.schuur_luchtvochtigheid
+                name: Schuur RV
+
+      # ── Verbruik 24u ─────────────────────────────────────────────────────
+      - type: grid
+        column_span: 1
+        cards:
+          - type: custom:mushroom-title-card
+            title: Verbruik 24u
+          - type: custom:apexcharts-card
+            graph_span: 24h
+            header:
+              show: false
+            apex_config:
+              chart:
+                height: 200
+              colors: ["#ff8c42", "#5e92f3"]
+              stroke:
+                width: 0
+              dataLabels:
+                enabled: false
+            series:
+              - entity: sensor.pellet_warmtevermogen
+                name: Pellet
+                type: column
+                group_by:
+                  func: avg
+                  duration: 1h
+              - entity: sensor.cv_modulatie
+                name: Gas
+                type: column
+                group_by:
+                  func: avg
+                  duration: 1h
+
+      # ── Strategie / mode ─────────────────────────────────────────────────
+      - type: grid
+        column_span: 1
+        cards:
+          - type: custom:mushroom-title-card
+            title: Strategie
+          - type: custom:mushroom-select-card
+            entity: input_select.warmte_modus
+            name: Warmte strategie
+            icon: mdi:swap-horizontal
+          - type: entities
+            entities:
+              - entity: input_boolean.hvac_modus_zomer
+                name: Zomermodus (alleen tapwater)
+              - entity: input_boolean.hvac_boost_badkamer
+                name: Boost badkamer 30 min
+              - entity: input_number.pellet_drempel
+                name: Pellet 3-weg klep drempel
+
+      # =====================================================================
+      # SECTIE 4 — KOSTEN & BESPARING (Frank Energie + pellet prijs)
+      # =====================================================================
+      - type: grid
+        column_span: 4
+        cards:
+          - type: custom:mushroom-title-card
+            title: Kosten & besparing vandaag
+            subtitle: Frank Energie dynamische gasprijs · pellet prijs handmatig
+
+      - type: grid
+        column_span: 2
+        cards:
+          # Kosten KPI strip — 3 grote getallen
+          - type: custom:button-card
+            entity: sensor.kosten_gas_dag
+            name: Gas vandaag
+            show_state: true
+            show_icon: true
+            icon: mdi:fire
+            styles:
+              card:
+                - background: "linear-gradient(135deg, rgba(94,146,243,.12), rgba(94,146,243,.02))"
+                - border: 1px solid rgba(94,146,243,.30)
+                - border-radius: 18px
+                - padding: 16px
+                - backdrop-filter: blur(20px)
+              name:
+                - color: "#8d96b0"
+                - font-size: 11px
+                - text-transform: uppercase
+                - letter-spacing: .12em
+              state:
+                - color: "#5e92f3"
+                - font-size: 30px
+                - font-weight: 700
+              icon:
+                - color: "#5e92f3"
+            state_display: "€ [[[ return Number(entity.state).toFixed(2).replace('.',',') ]]]"
+            tap_action:
+              action: more-info
+              entity: sensor.gas_verbruik_dag
+
+          - type: custom:button-card
+            entity: sensor.kosten_pellet_dag
+            name: Pellet vandaag
+            show_state: true
+            show_icon: true
+            icon: mdi:fire-circle
+            styles:
+              card:
+                - background: "linear-gradient(135deg, rgba(255,140,66,.14), rgba(255,140,66,.02))"
+                - border: 1px solid rgba(255,140,66,.30)
+                - border-radius: 18px
+                - padding: 16px
+                - backdrop-filter: blur(20px)
+              name:
+                - color: "#8d96b0"
+                - font-size: 11px
+                - text-transform: uppercase
+                - letter-spacing: .12em
+              state:
+                - color: "#ff8c42"
+                - font-size: 30px
+                - font-weight: 700
+              icon:
+                - color: "#ff8c42"
+            state_display: "€ [[[ return Number(entity.state).toFixed(2).replace('.',',') ]]]"
+            tap_action:
+              action: more-info
+              entity: sensor.pellet_verbruik_dag_kg
+
+      - type: grid
+        column_span: 2
+        cards:
+          - type: custom:button-card
+            entity: sensor.besparing_pellet_dag
+            name: Bespaard t.o.v. gas
+            show_state: true
+            show_icon: true
+            icon: mdi:piggy-bank-outline
+            styles:
+              card:
+                - background: "linear-gradient(135deg, rgba(102,187,106,.14), rgba(61,220,151,.02))"
+                - border: 1px solid rgba(102,187,106,.35)
+                - border-radius: 18px
+                - padding: 16px
+                - backdrop-filter: blur(20px)
+                - box-shadow: "0 0 24px -10px rgba(102,187,106,.5)"
+              name:
+                - color: "#8d96b0"
+                - font-size: 11px
+                - text-transform: uppercase
+                - letter-spacing: .12em
+              state:
+                - color: "#3ddc97"
+                - font-size: 30px
+                - font-weight: 700
+              icon:
+                - color: "#3ddc97"
+            state_display: "€ [[[ return Number(entity.state).toFixed(2).replace('.',',') ]]]"
+
+          # Prijsreferenties — Frank gasprijs + handmatige pelletprijs
+          - type: entities
+            title: Tariefreferentie
+            show_header_toggle: false
+            entities:
+              - entity: sensor.frank_energie_gas_actueel
+                name: Gasprijs (Frank Energie)
+                icon: mdi:gas-cylinder
+              - entity: input_number.pellet_prijs_per_kg
+                name: Pellet prijs per kg
+                icon: mdi:tag-outline
+              - entity: sensor.kosten_totaal_dag
+                name: Totaal warmtekosten vandaag
+                icon: mdi:calculator-variant
+            card_mod:
+              style: |
+                ha-card {
+                  background: rgba(255,255,255,.03);
+                  border: 1px solid rgba(255,255,255,.08);
+                  border-radius: 18px;
+                  backdrop-filter: blur(20px);
+                }
+
+      - type: grid
+        column_span: 4
+        cards:
+          # Trend grafiek — kosten gas vs pellet over 7 dagen
+          - type: custom:apexcharts-card
+            graph_span: 7d
+            header:
+              show: true
+              title: Warmtekosten 7 dagen
+              show_states: true
+              colorize_states: true
+            apex_config:
+              chart:
+                height: 240
+                type: bar
+                stacked: true
+                background: transparent
+              theme:
+                mode: dark
+              plotOptions:
+                bar:
+                  borderRadius: 6
+                  columnWidth: 60%
+              dataLabels:
+                enabled: false
+              legend:
+                show: true
+                labels:
+                  colors: "#8d96b0"
+              xaxis:
+                labels:
+                  style:
+                    colors: "#8d96b0"
+              yaxis:
+                labels:
+                  formatter: |
+                    EVAL:function(v){return '€ '+v.toFixed(2);}
+                  style:
+                    colors: "#8d96b0"
+            series:
+              - entity: sensor.kosten_gas_dag
+                name: Gas
+                type: column
+                color: "#5e92f3"
+                group_by:
+                  func: max
+                  duration: 1d
+              - entity: sensor.kosten_pellet_dag
+                name: Pellet
+                type: column
+                color: "#ff8c42"
+                group_by:
+                  func: max
+                  duration: 1d
+              - entity: sensor.besparing_pellet_dag
+                name: Besparing
+                type: line
+                color: "#3ddc97"
+                stroke_width: 2
+                group_by:
+                  func: max
+                  duration: 1d
+
+          # Markdown — uitleg bron-mapping en kosten
+          - type: markdown
+            content: >
+              ### Kostenmodel
+
+              **Gas (CV ketel):** dynamische tariefdata uit Frank Energie
+              integratie — `sensor.frank_energie_gas_actueel`. DSMR P1 leest
+              `m³ vandaag`.
+
+              **Pellet (Naturela):** controller geeft `kg vandaag` direct.
+              Prijs per kg in te stellen via `input_number.pellet_prijs_per_kg`
+              (default € 0,40).
+
+              **Besparing:** als alle pellet-kWh via gas was geleverd, hoeveel
+              extra had dat gekost? `(pellet_kg × 0,52 m³_equiv × gasprijs) −
+              (pellet_kg × pelletprijs)`.
+
+              **Bron-tip schuur:** klep blijft open tot watertemp <35°C.
+              Tijdens nablusfase kan CV-ketel de schuur voeden — geen
+              veiligheidsissue, wel ~3× duurder dan pellet bij gelijke kWh.
+            card_mod:
+              style: |
+                ha-card {
+                  background: rgba(255,255,255,.03);
+                  border: 1px solid rgba(255,255,255,.08);
+                  border-radius: 18px;
+                  backdrop-filter: blur(20px);
+                  padding: 6px 10px;
+                }
+
+# ============================================================================
+#  CARD-MOD GLOBAL THEME (optioneel — zet in /config/themes/hvac-glass.yaml)
+# ============================================================================
+# hvac-glass:
+#   primary-color: "#ff8c42"
+#   accent-color: "#5e92f3"
+#   ha-card-background: "rgba(255,255,255,0.04)"
+#   ha-card-border-color: "rgba(255,255,255,0.08)"
+#   ha-card-border-radius: "22px"
+#   ha-card-box-shadow: "0 8px 32px rgba(0,0,0,0.25)"
+#   primary-background-color: "#0d1224"
+#   secondary-background-color: "#141a32"
+#   primary-text-color: "#e8ecf5"
+#   secondary-text-color: "#8d96b0"
+#   card-mod-root: |
+#     .mdc-drawer { backdrop-filter: blur(20px); }
+#   card-mod-card: |
+#     ha-card {
+#       backdrop-filter: blur(20px);
+#       background: var(--ha-card-background) !important;
+#       border: 1px solid var(--ha-card-border-color) !important;
+#       border-radius: var(--ha-card-border-radius) !important;
+#     }

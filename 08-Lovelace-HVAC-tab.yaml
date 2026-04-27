@@ -1,0 +1,482 @@
+# ============================================================
+# Lovelace YAML — HVAC tab voor Future dashboard
+# ============================================================
+# Deployment-instructies onderaan dit bestand.
+# Gebruikt HACS-cards: mushroom-cards, apexcharts-card, mini-graph-card,
+# button-card. Indien niet geïnstalleerd, vervang door standaard cards
+# (entities/glance/statistic).
+# Entity-ID's volgen de mapping uit 06-HA-entities.md.
+# ============================================================
+
+title: HVAC
+path: hvac
+icon: mdi:radiator
+type: sections
+max_columns: 4
+sections:
+
+  # ============================================================
+  # SECTIE 1 — Hero status (live overzicht in één blik)
+  # ============================================================
+  - type: grid
+    column_span: 4
+    cards:
+      - type: heading
+        heading: "🔥 Live HVAC status"
+        heading_style: title
+
+      - type: horizontal-stack
+        cards:
+          - type: custom:mushroom-template-card
+            primary: CV ketel
+            secondary: |-
+              {% if is_state('binary_sensor.cv_brander_actief','on') %}
+              ● {{ states('sensor.cv_modulatie') }}% · {{ states('sensor.cv_aanvoer_temp') }}°C
+              {% else %}
+              ○ uit
+              {% endif %}
+            icon: mdi:fire
+            icon_color: |-
+              {{ 'orange' if is_state('binary_sensor.cv_brander_actief','on') else 'grey' }}
+            tap_action:
+              action: more-info
+              entity: sensor.cv_aanvoer_temp
+
+          - type: custom:mushroom-template-card
+            primary: Pellet
+            secondary: |-
+              {% if is_state('binary_sensor.pellet_brander_actief','on') %}
+              ● {{ states('sensor.pellet_vermogen') }} kW · {{ states('sensor.pellet_aanvoer_temp') }}°C
+              {% else %}
+              ○ uit
+              {% endif %}
+            icon: mdi:pine-tree-fire
+            icon_color: |-
+              {{ 'deep-orange' if is_state('binary_sensor.pellet_brander_actief','on') else 'grey' }}
+
+          - type: custom:mushroom-template-card
+            primary: Boiler
+            secondary: |-
+              ▲ {{ states('sensor.boiler_temp_boven') }}°C  ▼ {{ states('sensor.boiler_temp_onder') }}°C
+            icon: mdi:water-boiler
+            icon_color: blue
+
+          - type: custom:mushroom-template-card
+            primary: Toon huiskamer
+            secondary: |-
+              {{ states('sensor.toon_kamer_temp') }}°C → {{ states('sensor.toon_setpoint') }}°C
+            icon: mdi:thermostat
+            icon_color: |-
+              {{ 'green' if is_state('binary_sensor.toon_warmtevraag','off') else 'orange' }}
+
+  # ============================================================
+  # SECTIE 2 — Verbruik per periode (3 rijen × 4 kolommen)
+  # ============================================================
+  - type: grid
+    column_span: 4
+    cards:
+      - type: heading
+        heading: "📊 Verbruik · kosten · besparing"
+
+      # ---- Vandaag ----
+      - type: horizontal-stack
+        cards:
+          - type: custom:mushroom-template-card
+            primary: Gas vandaag
+            secondary: "{{ states('sensor.cv_gas_dag') }} m³ · € {{ states('sensor.gas_kosten_dag') }}"
+            icon: mdi:fire
+            icon_color: red
+            badge_icon: mdi:calendar-today
+          - type: custom:mushroom-template-card
+            primary: Pellet vandaag
+            secondary: "{{ states('sensor.pellet_kg_dag') }} kg · € {{ states('sensor.pellet_kosten_dag') }}"
+            icon: mdi:pine-tree-fire
+            icon_color: deep-orange
+            badge_icon: mdi:calendar-today
+          - type: custom:mushroom-template-card
+            primary: Totaal vandaag
+            secondary: "€ {{ states('sensor.totaal_kosten_dag') }}"
+            icon: mdi:cash-multiple
+            icon_color: blue
+            badge_icon: mdi:calendar-today
+          - type: custom:mushroom-template-card
+            primary: Besparing vandaag
+            secondary: "€ {{ states('sensor.besparing_pellet_dag') }}"
+            icon: mdi:piggy-bank
+            icon_color: green
+            badge_icon: mdi:calendar-today
+
+      # ---- Deze maand ----
+      - type: horizontal-stack
+        cards:
+          - type: custom:mushroom-template-card
+            primary: Gas maand
+            secondary: "{{ states('sensor.cv_gas_maand') }} m³ · € {{ states('sensor.gas_kosten_maand') }}"
+            icon: mdi:fire
+            icon_color: red
+            badge_icon: mdi:calendar-month
+          - type: custom:mushroom-template-card
+            primary: Pellet maand
+            secondary: "{{ states('sensor.pellet_kg_maand') }} kg · € {{ states('sensor.pellet_kosten_maand') }}"
+            icon: mdi:pine-tree-fire
+            icon_color: deep-orange
+            badge_icon: mdi:calendar-month
+          - type: custom:mushroom-template-card
+            primary: Totaal maand
+            secondary: "€ {{ states('sensor.totaal_kosten_maand') }}"
+            icon: mdi:cash-multiple
+            icon_color: blue
+            badge_icon: mdi:calendar-month
+          - type: custom:mushroom-template-card
+            primary: Besparing maand
+            secondary: "€ {{ states('sensor.besparing_pellet_maand') }}"
+            icon: mdi:piggy-bank
+            icon_color: green
+            badge_icon: mdi:calendar-month
+
+      # ---- Dit jaar ----
+      - type: horizontal-stack
+        cards:
+          - type: custom:mushroom-template-card
+            primary: Gas jaar
+            secondary: "{{ states('sensor.cv_gas_jaar') }} m³ · € {{ states('sensor.gas_kosten_jaar') }}"
+            icon: mdi:fire
+            icon_color: red
+            badge_icon: mdi:calendar-blank
+          - type: custom:mushroom-template-card
+            primary: Pellet jaar
+            secondary: "{{ states('sensor.pellet_kg_jaar') }} kg · € {{ states('sensor.pellet_kosten_jaar') }}"
+            icon: mdi:pine-tree-fire
+            icon_color: deep-orange
+            badge_icon: mdi:calendar-blank
+          - type: custom:mushroom-template-card
+            primary: Totaal jaar
+            secondary: "€ {{ states('sensor.totaal_kosten_jaar') }}"
+            icon: mdi:cash-multiple
+            icon_color: blue
+            badge_icon: mdi:calendar-blank
+          - type: custom:mushroom-template-card
+            primary: Besparing jaar
+            secondary: "€ {{ states('sensor.besparing_pellet_jaar') }}"
+            icon: mdi:piggy-bank
+            icon_color: green
+            badge_icon: mdi:calendar-blank
+
+  # ============================================================
+  # SECTIE 3 — Energie-mix grafiek (laatste 7 dagen)
+  # ============================================================
+  - type: grid
+    column_span: 4
+    cards:
+      - type: heading
+        heading: "📈 Energie-mix laatste 7 dagen"
+
+      - type: custom:apexcharts-card
+        graph_span: 7d
+        span:
+          end: day
+        header:
+          show: true
+          title: kWh per dag · gas vs pellet
+          show_states: true
+          colorize_states: true
+        apex_config:
+          chart:
+            type: bar
+            stacked: true
+          plotOptions:
+            bar:
+              borderRadius: 3
+              columnWidth: 60%
+          legend:
+            show: true
+            position: top
+        series:
+          - entity: sensor.cv_gas_dag
+            name: Gas (m³ × 9,77 kWh)
+            type: column
+            color: '#e74c3c'
+            transform: "return x * 9.77;"
+            group_by:
+              func: last
+              duration: 1d
+          - entity: sensor.pellet_kg_dag
+            name: Pellet (kg × 4,8 kWh)
+            type: column
+            color: '#d49355'
+            transform: "return x * 4.8;"
+            group_by:
+              func: last
+              duration: 1d
+
+  # ============================================================
+  # SECTIE 4 — Pellet-voorraad + onderhoud
+  # ============================================================
+  - type: grid
+    column_span: 2
+    cards:
+      - type: heading
+        heading: "📦 Voorraad & onderhoud"
+
+      - type: custom:mushroom-template-card
+        primary: Pellet voorraad
+        secondary: |-
+          {{ states('sensor.pellet_voorraad_kg') }} kg · {{ states('sensor.pellet_voorraad_dagen') }} dagen
+        icon: mdi:weight-kilogram
+        icon_color: |-
+          {% set kg = states('sensor.pellet_voorraad_kg')|float(0) %}
+          {% if kg < 15 %}red
+          {% elif kg < 30 %}amber
+          {% else %}cyan{% endif %}
+
+      - type: entities
+        title: Onderhoud-schema
+        entities:
+          - entity: input_datetime.cv_volgende_onderhoud
+            name: CV ketel volgende beurt
+            icon: mdi:wrench
+          - entity: input_datetime.pellet_volgende_onderhoud
+            name: Pellet volgende beurt
+            icon: mdi:wrench
+          - entity: input_datetime.pellet_laatste_bestelling_datum
+            name: Laatste pellet-bestelling
+            icon: mdi:truck-delivery
+          - entity: input_number.pellet_laatste_bestelling_kg
+            name: Laatste bestelling kg
+            icon: mdi:weight
+
+  # ============================================================
+  # SECTIE 5 — Comfort + efficiency
+  # ============================================================
+  - type: grid
+    column_span: 2
+    cards:
+      - type: heading
+        heading: "🌡 Comfort & efficiency"
+
+      - type: horizontal-stack
+        cards:
+          - type: custom:mushroom-template-card
+            primary: Huiskamer (24h)
+            secondary: |-
+              gem. {{ state_attr('sensor.toon_kamer_temp_24h_avg','last_period_value')|round(1) }}°C
+            icon: mdi:home-thermometer
+            icon_color: green
+          - type: custom:mushroom-template-card
+            primary: Schuur (24h)
+            secondary: |-
+              gem. {{ state_attr('sensor.tado_schuur_temp_24h_avg','last_period_value')|round(1) }}°C
+            icon: mdi:thermometer-low
+            icon_color: cyan
+
+      - type: custom:mini-graph-card
+        name: Temperaturen (24u)
+        hours_to_show: 24
+        points_per_hour: 4
+        line_width: 2
+        entities:
+          - entity: sensor.cv_aanvoer_temp
+            name: CV aanvoer
+            color: "#e74c3c"
+          - entity: sensor.cv_retour_temp
+            name: CV retour
+            color: "#3a86ff"
+          - entity: sensor.boiler_temp_boven
+            name: Boiler boven
+            color: "#f97316"
+          - entity: sensor.pellet_aanvoer_temp
+            name: Pellet aanvoer
+            color: "#d49355"
+        show:
+          fill: false
+          legend: true
+
+      - type: entities
+        title: Brander-uren
+        entities:
+          - entity: counter.cv_brander_uren
+            name: CV ketel uren
+            icon: mdi:fire
+          - entity: counter.pellet_brander_uren
+            name: Pellet uren
+            icon: mdi:pine-tree-fire
+
+  # ============================================================
+  # SECTIE 6 — Frank Energie + pellet-prijzen
+  # ============================================================
+  - type: grid
+    column_span: 2
+    cards:
+      - type: heading
+        heading: "💰 Energieprijzen NU"
+
+      - type: horizontal-stack
+        cards:
+          - type: custom:mushroom-template-card
+            primary: Gas
+            secondary: "€ {{ states('sensor.frank_energie_gas_huidige_prijs') }}/m³"
+            icon: mdi:gas-cylinder
+            icon_color: red
+          - type: custom:mushroom-template-card
+            primary: Stroom
+            secondary: "€ {{ states('sensor.frank_energie_stroom_huidige_prijs') }}/kWh"
+            icon: mdi:flash
+            icon_color: amber
+          - type: custom:mushroom-template-card
+            primary: Pellet
+            secondary: "€ {{ states('input_number.pellet_prijs_per_ton') }}/ton"
+            icon: mdi:pine-tree-fire
+            icon_color: deep-orange
+
+      - type: custom:apexcharts-card
+        graph_span: 24h
+        header:
+          show: true
+          title: Gas-prijs vandaag (€/m³)
+        series:
+          - entity: sensor.frank_energie_gas_huidige_prijs
+            name: Gas
+            color: "#e74c3c"
+            type: line
+            stroke_width: 2
+
+  # ============================================================
+  # SECTIE 7 — Pellet-circuit status
+  # ============================================================
+  - type: grid
+    column_span: 2
+    cards:
+      - type: heading
+        heading: "🌲 Pellet-circuit detail"
+
+      - type: entities
+        entities:
+          - entity: binary_sensor.pellet_brander_actief
+            name: Brander
+            icon: mdi:fire
+          - entity: sensor.pellet_vermogen
+            name: Vermogen
+            icon: mdi:lightning-bolt
+          - entity: sensor.pellet_modulatie
+            name: Modulatie
+            icon: mdi:gauge
+          - entity: sensor.pellet_aanvoer_temp
+            name: Aanvoer-temp
+            icon: mdi:thermometer-high
+          - entity: sensor.pellet_retour_temp
+            name: Retour-temp
+            icon: mdi:thermometer-low
+          - entity: sensor.driewegklep_pomp_temp
+            name: 3-wegklep pomp
+            icon: mdi:valve
+          - entity: binary_sensor.driewegklep_naar_systeem
+            name: Klep naar BG
+            icon: mdi:transit-connection-variant
+
+      - type: entities
+        title: VLW Schuur — groep-temperaturen
+        entities:
+          - entity: sensor.vlw_schuur_g1_temp
+            name: Groep 1
+          - entity: sensor.vlw_schuur_g2_temp
+            name: Groep 2
+          - entity: sensor.vlw_schuur_g3_temp
+            name: Groep 3
+          - entity: sensor.tado_schuur_temp
+            name: Schuur ambient (Tado)
+
+  # ============================================================
+  # SECTIE 8 — Insights & aanbevelingen
+  # ============================================================
+  - type: grid
+    column_span: 4
+    cards:
+      - type: heading
+        heading: "💡 Insights"
+
+      - type: markdown
+        content: |
+          {% set pellet_kg = states('sensor.pellet_voorraad_kg')|float(0) %}
+          {% set pellet_dagen = states('sensor.pellet_voorraad_dagen')|float(0) %}
+          {% set gas_prijs = states('sensor.frank_energie_gas_huidige_prijs')|float(0) %}
+          {% set pellet_actief = is_state('binary_sensor.pellet_brander_actief','on') %}
+          {% set boiler_top = states('sensor.boiler_temp_boven')|float(0) %}
+          {% set boiler_bot = states('sensor.boiler_temp_onder')|float(0) %}
+
+          ### Live status
+          {% if pellet_actief %}
+          ● **Pellet draait** — {{ states('sensor.pellet_vermogen') }} kW @ {{ states('sensor.pellet_modulatie') }}% modulatie. 3-wegklep T-pomp {{ states('sensor.driewegklep_pomp_temp') }}°C → klep is {% if is_state('binary_sensor.driewegklep_naar_systeem','on') %}**actief richting BG**{% else %}**bypass-recirculatie**{% endif %}.
+          {% else %}
+          ○ Pellet uit.
+          {% endif %}
+
+          **Boiler-stratificatie**: ▲ {{ boiler_top }}°C boven · ▼ {{ boiler_bot }}°C onder · ΔT = {{ (boiler_top - boiler_bot)|round(1) }}°C
+          {% if boiler_top > 55 %}→ buffer is goed gevuld, tapwater zal nu nauwelijks gas-vragen.
+          {% elif boiler_top > 40 %}→ buffer halfvol, ketel zal mogelijk lichte na-verwarming doen bij grote tap-vraag.
+          {% else %}→ buffer is leeg, ketel valt terug op standaard combi-functie.
+          {% endif %}
+
+          ### Voorraad & advies
+          {% if pellet_kg < 15 %}
+          ⚠️ **Pellet kritiek laag** ({{ pellet_kg }} kg, ~{{ pellet_dagen|round(0) }} dagen). Bestel **vandaag**.
+          {% elif pellet_kg < 30 %}
+          ⚠️ **Pellet bijna op** ({{ pellet_kg }} kg, ~{{ pellet_dagen|round(0) }} dagen). Bestel binnen 5 dagen.
+          {% else %}
+          ✓ Pellet voorraad voldoende ({{ pellet_kg }} kg, ~{{ pellet_dagen|round(0) }} dagen).
+          {% endif %}
+
+          {% if gas_prijs > 1.6 %}
+          📈 **Gas-tarief hoog** (€{{ gas_prijs }}/m³). Pellet-prioriteit is nu extra kostenefficiënt.
+          {% elif gas_prijs < 1.2 %}
+          📉 **Gas-tarief laag** (€{{ gas_prijs }}/m³). Pellet-besparing is beperkter dan normaal.
+          {% endif %}
+
+
+# ============================================================
+# DEPLOYMENT-INSTRUCTIES
+# ============================================================
+#
+# 1. Open je Future dashboard in HA → ⋮ menu → "Edit dashboard"
+# 2. Klik op "+ Add view" om een nieuw tabblad toe te voegen
+# 3. Klik op het pencil-icoon naast het nieuwe tabblad → "Raw configuration editor"
+# 4. Plak de YAML hierboven (sections t/m insights) — dus zonder de
+#    deployment-instructies vanaf hier.
+# 5. Klik "Save". Het tabblad heet "HVAC" en heeft een radiator-icoon.
+#
+# VEREISTE HACS-COMPONENTEN:
+# - mushroom-cards (https://github.com/piitaya/lovelace-mushroom)
+# - apexcharts-card (https://github.com/RomRider/apexcharts-card)
+# - mini-graph-card (https://github.com/kalkih/mini-graph-card)
+# Optioneel: button-card (voor extra customisatie)
+#
+# Indien een van deze niet beschikbaar is: vervang de bijbehorende cards
+# door standaard `entities` of `glance` cards.
+#
+# ENTITY-IDs: gebaseerd op naming uit 06-HA-entities.md.
+# Indien jouw HA andere entity-IDs gebruikt:
+# - vervang via search&replace in deze YAML, of
+# - maak template-sensoren met de hier gebruikte naming als alias
+#
+# Sensoren die mogelijk nog niet bestaan:
+# - sensor.gas_kosten_dag/_maand/_jaar (template, zie 06-HA-entities.md §14)
+# - sensor.pellet_kosten_dag/_maand/_jaar (template, zie §14)
+# - sensor.totaal_kosten_dag/_maand/_jaar (template)
+# - sensor.besparing_pellet_dag/_maand/_jaar (template)
+# - sensor.cv_gas_dag/_maand/_jaar (utility_meter, zie §13)
+# - sensor.pellet_kg_dag/_maand/_jaar (utility_meter)
+# - sensor.pellet_voorraad_kg + voorraad_dagen (template)
+# - counter.cv_brander_uren + pellet_brander_uren
+# - input_datetime.cv_volgende_onderhoud, pellet_volgende_onderhoud,
+#   pellet_laatste_bestelling_datum
+# - input_number.pellet_prijs_per_ton, pellet_laatste_bestelling_kg
+# - sensor.toon_kamer_temp_24h_avg, tado_schuur_temp_24h_avg
+#   (statistics-platform sensoren, met type: mean, max_age 24h)
+#
+# Pre-deployment checklist:
+# 1. Bevestig welke entity-IDs Toon, Tado, Naturela, Frank Energie geven
+#    via Developer Tools → Toestanden
+# 2. Maak de utility_meters aan in configuration.yaml
+# 3. Voeg de template-sensoren toe in configuration.yaml
+# 4. Maak de input_helpers aan via UI (Settings → Devices & services → Helpers)
+# 5. Restart HA, controleer dat alle entities bestaan
+# 6. Plak deze YAML in het Future dashboard als nieuwe view
