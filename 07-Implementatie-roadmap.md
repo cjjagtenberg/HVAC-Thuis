@@ -10,7 +10,7 @@ Volgorde van uitvoering om het systeem volledig in Home Assistant te integreren.
 |------|-----|------|
 | 0.1 | `01-Analyse-systeem.md` doornemen — zorg dat topologie helder is | 30 min |
 | 0.2 | `06-HA-entities.md` doornemen — naming-conventies vastpinnen | 15 min |
-| 0.3 | Inkoop hardware: **6× DS18B20** watertight + 2 ESP8266/ESP32, OneWire-kabel, 4,7 kΩ pull-up resistor, geleid-pasta, hittebestendige tape | bestelling |
+| 0.3 | Inkoop hardware: **4× DS18B20** watertight + 1 ESP8266/ESP32, OneWire-kabel, 4,7 kΩ pull-up resistor, geleid-pasta, hittebestendige tape (boiler-temps al via Tuya) | bestelling |
 | 0.4 | Backup HA + Toon-config maken (Snapshot) | 5 min |
 
 ---
@@ -33,14 +33,14 @@ Volgorde van uitvoering om het systeem volledig in Home Assistant te integreren.
 
 ## Fase 2 — Nieuwe sensoren installeren
 
-**Doel**: 6 DS18B20-sensoren fysiek monteren en via ESPHome aan HA koppelen.
+**Doel**: 4 DS18B20-sensoren fysiek monteren en via ESPHome aan HA koppelen. Boiler-temps zijn al beschikbaar via Tuya.
 
-### 2.1 — ESPHome node 1 (zolder, in meterkast)
-- `boiler_temp_boven` (op tank-mantel boven, hoogte ~340 cm vanaf bodem)
-- `boiler_temp_onder` (op tank-mantel onder, hoogte ~50 cm vanaf bodem)
+### 2.1 — Reeds beschikbaar (geen actie)
+- `sensor.temp_boiler_top_temperatuur` (Tuya, op tank-mantel boven)
+- `sensor.temp_boiler_bottom_temperatuur` (Tuya, op tank-mantel onder)
+
+### 2.2 — ESPHome node, locatie zolder/meterkast (1 sensor)
 - `tap_warm_temp` (op T4-leiding direct na ketel-uitgang)
-
-= **3 sensoren** op 1 OneWire-bus.
 
 ESPHome YAML:
 ```yaml
@@ -75,17 +75,17 @@ sensor:
   # ... etc voor verdeler-boven aan/ret + mengkraan + tap-warm
 ```
 
-### 2.2 — ESPHome node 2 (schuur)
+### 2.3 — ESPHome node, locatie schuur (3 sensoren)
 - `vlw_schuur_g1_temp` (groep 1 aanvoer-leiding)
 - `vlw_schuur_g2_temp` (groep 2)
 - `vlw_schuur_g3_temp` (groep 3)
 
 = **3 sensoren** op 1 OneWire-bus.
 
-### 2.3 — Verifieer alle 6 sensoren in HA
+### 2.5 — Verifieer alle 4 sensoren in HA
 Voor elk: check entiteit komt binnen, waarde plausibel (15-80°C bereik), update_interval ≤ 60s.
 
-### 2.4 — Mengkraan-output via template (geen fysieke sensor)
+### 2.6 — Mengkraan-output via template (geen fysieke sensor)
 ```yaml
 template:
   - sensor:

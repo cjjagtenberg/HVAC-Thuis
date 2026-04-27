@@ -55,12 +55,12 @@ Dit document koppelt elke sensor-pil/data-tile in de visualisatie (04c en het da
 
 | Pil | Entity ID | Unit | Toelichting |
 |-----|-----------|------|-------------|
-| `▲ 65°C` (boven) | `sensor.boiler_temp_boven` | °C | top-sensor — warmste laag (stratificatie-top) |
-| `▼ 38°C` (onder) | `sensor.boiler_temp_onder` | °C | bottom-sensor — koudste laag |
+| `▲ 65°C` (boven) | `sensor.temp_boiler_top_temperatuur` | °C | top-sensor — warmste laag (stratificatie-top) |
+| `▼ 38°C` (onder) | `sensor.temp_boiler_bottom_temperatuur` | °C | bottom-sensor — koudste laag |
 | (afgeleid) ΔT stratificatie | `sensor.boiler_stratificatie_dt` | °C | template: boven − onder |
 | (afgeleid) buffer-status | `sensor.boiler_buffer_status` | text | "vol" / "halfvol" / "leeg" o.b.v. boven >55°C / 40-55 / <40 |
 
-**Hardware**: 2× DS18B20 via ESPHome op de tank-mantel (mantel-meting i.p.v. dompelbuis — gemakkelijker te installeren, accuraatheid binnen ±2°C).
+**Hardware**: 2× **Tuya temperatuursensoren** (al geïnstalleerd op de tank-mantel, locatie Zolder). Geen DS18B20-installatie nodig.
 
 ---
 
@@ -314,7 +314,7 @@ automation:
 - [ ] Toon-integratie verifieren (entiteiten beschikbaar in HA)
 - [ ] Naturela MQTT/Modbus integratie installeren
 - [ ] Tado integration koppelen
-- [ ] **Hardware installeren** (na schrap verdelers + mengkraan): 2× boiler-DS18B20, 3× VLW groep-DS18B20, 1× tap-warm-DS18B20 = **6 nieuwe sensoren totaal**
+- [ ] **Hardware installeren** (na schrap verdelers + mengkraan, en Tuya boiler-sensoren al beschikbaar): 3× VLW groep-DS18B20, 1× tap-warm-DS18B20 = **4 nieuwe sensoren totaal**
 - [ ] ESPHome node configureren voor de DS18B20-sensoren
 - [ ] Frank Energie integration installeren + API-key
 - [ ] `input_number.pellet_prijs_per_ton` als helper aanmaken

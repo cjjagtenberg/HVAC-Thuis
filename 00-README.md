@@ -42,8 +42,8 @@ Open Developer Tools → Toestanden → check:
 → noteer afwijkende entity-IDs (search&replace later in de YAML's).
 
 ### Fase C — Hardware (DS18B20 sensoren)
-6 nieuwe sensoren via 2 ESPHome-nodes:
-- **Zolder** (3): boiler_temp_boven, boiler_temp_onder, tap_warm_temp
+4 nieuwe sensoren via 1-2 ESPHome-nodes (boiler al via Tuya):
+- **Zolder** (1): tap_warm_temp
 - **Schuur** (3): vlw_schuur_g1, g2, g3
 
 Zie **07-Implementatie-roadmap.md §2** voor ESPHome YAML-templates.
@@ -129,8 +129,11 @@ Zie **07-Implementatie-roadmap.md §2** voor ESPHome YAML-templates.
 - Tado → schuur-ambient
 - Frank Energie → dynamische gas + stroom tarieven
 
-**Nieuw te installeren** (6× DS18B20):
-- Boiler boven + onder (stratificatie)
+**Reeds beschikbaar via Tuya:**
+- `sensor.temp_boiler_top_temperatuur` (boven)
+- `sensor.temp_boiler_bottom_temperatuur` (onder)
+
+**Nieuw te installeren** (4× DS18B20):
 - VLW Schuur G1, G2, G3 (per groep aanvoer-temp)
 - Tap-warm bij douche (toont buffer-leeg-effect)
 

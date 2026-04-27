@@ -153,26 +153,27 @@ VLW Schuur retour-rail
 - **Tado** — geeft schuur-ambient-temperatuur en luchtvochtigheid.
 - **Frank Energie** — geeft dynamische gas- en stroomtarieven (uurprijzen).
 
-### 3.2 Toe te voegen sensoren (DS18B20 via ESPHome) — gerationaliseerd
+### 3.2 Toe te voegen sensoren — gerationaliseerd
 
-Na kritische review: 11 → **6 sensoren** (verdeler-temps en mengkraan-output geschrapt).
+Na kritische review en inventarisatie: 11 → **4 nieuwe sensoren** (boiler al via Tuya, verdeler-temps + mengkraan-output geschrapt).
 
-1. `sensor.boiler_temp_boven` — bovenkant 200 L tank · stratificatie-top
-2. `sensor.boiler_temp_onder` — onderkant tank · stratificatie-bottom
-3. `sensor.vlw_schuur_g1_temp` — aanvoer groep 1
-4. `sensor.vlw_schuur_g2_temp` — aanvoer groep 2
-5. `sensor.vlw_schuur_g3_temp` — aanvoer groep 3
-6. `sensor.tap_warm_temp` — tap-warm-uit ketel (toont buffer-leeg-effect bij douche)
+**Reeds beschikbaar (geen installatie nodig):**
+- `sensor.temp_boiler_top_temperatuur` — bovenkant 200 L tank · Tuya, locatie Zolder
+- `sensor.temp_boiler_bottom_temperatuur` — onderkant tank · Tuya, locatie Zolder
+
+**Nog te installeren (4× DS18B20 via ESPHome in de schuur):**
+1. `sensor.vlw_schuur_g1_temp` — aanvoer groep 1
+2. `sensor.vlw_schuur_g2_temp` — aanvoer groep 2
+3. `sensor.vlw_schuur_g3_temp` — aanvoer groep 3
+4. `sensor.tap_warm_temp` — tap-warm-uit ketel (toont buffer-leeg-effect bij douche)
 
 **Geschrapt** (ratio uitgewerkt):
 - ~~Verdeler-temps (4×)~~ — verdelers zitten weggebouwd, geen spanning, en CV-aanvoer/retour wordt al gemeten bij de ketel via OpenTherm. Verdeler-temps wijken hooguit 1-3°C af door pijp-warmteverlies, geen extra diagnostische waarde.
 - ~~Mengkraan output~~ — mengkraan is thermostatisch, output is mechanisch begrensd op 65°C. Wordt afgeleid via template: `sensor.mengkraan_output_calculated = min(boiler_boven, 65)`.
+- ~~Boiler-DS18B20 (2×)~~ — al beschikbaar via Tuya temperatuursensoren op de tank.
 
-**Implementatie**: 6 DS18B20 verspreid over **1-2 ESPHome-nodes**:
-- Node 1 (zolder): boiler boven + onder, tap-warm = **3 sensoren**
-- Node 2 (schuur): VLW G1/G2/G3 = **3 sensoren**
-
-OneWire-bus per node, mantel-meting met geleidpasta + tape-isolatie.
+**Implementatie**: 4 DS18B20 op **1 ESPHome-node** in de schuur:
+- VLW G1/G2/G3 + tap-warm = OneWire-bus, mantel-meting met geleidpasta + tape-isolatie.
 
 ### 3.3 Berekende/template-sensoren
 - `sensor.boiler_stratificatie_dt` — boven − onder (beoordeling buffer-status)
